@@ -29,17 +29,29 @@ function mapAuthError(err: unknown): string {
       return 'Email/Password sign-in is not enabled in Firebase Console yet (Authentication -> Sign-in method -> Email/Password). You can use Continue with Google below right now!';
     case 'auth/popup-closed-by-user':
       return 'Sign-in window was closed before completing.';
+    case 'auth/permission-denied-on-the-service':
+    case 'auth/permission-denied-on-the-service.':
+      return 'Firebase Token Service was denied by your Google Cloud API key restrictions. In Google Cloud Console -> Credentials, allow Token Service API, Identity Toolkit API, and Cloud Firestore API for your domain (or remove key restrictions).';
     default: {
       if (err instanceof Error) {
+        let inner = err.message;
         try {
           const parsed = JSON.parse(err.message);
           if (parsed?.error) {
-            return `Account setup could not save your profile (${parsed.error}). Please try again.`;
+            inner = String(parsed.error);
           }
         } catch {
           // Not JSON
         }
-        return err.message;
+        if (inner.includes('permission-denied-on-the-service')) {
+          return 'Firebase Token Service was denied by your Google Cloud API key restrictions. In Google Cloud Console -> Credentials, allow Token Service API, Identity Toolkit API, and Cloud Firestore API for this domain (or set restrictions to None).';
+        }
+        if (inner.includes('requests-from-referer-') && inner.includes('are-blocked')) {
+          return `Requests from ${window.location.origin} are blocked by your Google Cloud API key Website restrictions. Add "${window.location.origin}/*" in Google Cloud Console -> APIs & Services -> Credentials (or set Application restrictions to None).`;
+        }
+        return inner !== err.message
+          ? `Account setup could not save your profile (${inner}). Please try again.`
+          : err.message;
       }
       return 'Authentication failed. Please try again.';
     }

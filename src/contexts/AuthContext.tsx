@@ -40,7 +40,9 @@ import { useTheme } from './ThemeContext';
 interface AuthContextValue {
   authUser: User | null;
   profile: UserPublic | null;
+  profileError: string | null;
   loading: boolean;
+  retryProfileLoad: () => Promise<void>;
   receivedBlessings: Blessing[];
   sentBlessings: Blessing[];
   savedBlessings: SavedBlessing[];
@@ -76,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { setTheme } = useTheme();
   const [authUser, setAuthUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserPublic | null>(null);
+  const [profileError, setProfileError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [receivedBlessings, setReceivedBlessings] = useState<Blessing[]>([]);
@@ -94,11 +97,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     username: string;
   } | null>(null);
 
+  const extractReadableError = (err: unknown): string => {
+    let message = 'Could not load your profile from Firestore.';
+    if (err instanceof Error) {
+      message = err.message;
+      try {
+        const parsed = JSON.parse(err.message);
+        if (parsed?.error) message = String(parsed.error);
+      } catch {
+        // Not JSON
+      }
+    }
+    if (message.includes('permission-denied-on-the-service')) {
+      return 'Firebase Token Service was denied (auth/permission-denied-on-the-service). In Google Cloud Console -> APIs & Services -> Credentials, ensure your API key allows Token Service API (securetoken.googleapis.com), Identity Toolkit API, and Cloud Firestore API, and that Website restrictions include this domain (or set restrictions to None).';
+    }
+    if (message.includes('requests-from-referer-') && message.includes('are-blocked')) {
+      return `Requests from ${window.location.origin} are blocked by your Google Cloud API key Website restrictions. Add "${window.location.origin}/*" in Google Cloud Console -> APIs & Services -> Credentials (or set Application restrictions to None).`;
+    }
+    return message;
+  };
+
+  const loadOrEnsureProfile = async (
+    user: User,
+    regOpts?: { displayName?: string; username?: string }
+  ) => {
+    setProfileError(null);
+    try {
+      const ensured = await ensureUserDocuments(user, regOpts);
+      setProfile(ensured);
+      return ensured;
+    } catch (err) {
+      console.error('Failed to ensure user profile:', err);
+      setProfileError(extractReadableError(err));
+      return null;
+    }
+  };
+
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, async (user) => {
       setAuthUser(user);
       if (!user) {
         setProfile(null);
+        setProfileError(null);
         setReceivedBlessings([]);
         setSentBlessings([]);
         setSavedBlessings([]);
@@ -117,16 +157,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           pending && (user.email || '').toLowerCase() === pending.email
             ? { displayName: pending.displayName, username: pending.username }
             : undefined;
-        const ensured = await ensureUserDocuments(user, regOpts);
-        setProfile(ensured);
-      } catch (err) {
-        console.error('Failed to ensure user profile:', err);
+        await loadOrEnsureProfile(user, regOpts);
       } finally {
         setLoading(false);
       }
     });
     return () => unsubAuth();
   }, []);
+
+  const retryProfileLoad = async () => {
+    if (!authUser) return;
+    setLoading(true);
+    try {
+      await loadOrEnsureProfile(authUser);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Attach real-time Firestore listeners ONLY when authenticated
   useEffect(() => {
@@ -139,12 +186,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (snap.exists()) {
           const data = snap.data() as UserPublic;
           setProfile(data);
+          setProfileError(null);
           if (data.preferences?.theme) {
             setTheme(data.preferences.theme);
           }
         }
       },
-      (err) => handleFirestoreError(err, OperationType.GET, `users/${uid}`)
+      (err) => {
+        setProfileError(extractReadableError(err));
+        handleFirestoreError(err, OperationType.GET, `users/${uid}`);
+      }
     );
 
     const unsubReceived = onSnapshot(
@@ -293,9 +344,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginWithGoogle = async () => {
+    setProfileError(null);
     const provider = new GoogleAuthProvider();
     const cred = await signInWithPopup(auth, provider);
-    await ensureUserDocuments(cred.user);
+    const ensured = await ensureUserDocuments(cred.user);
+    setProfile(ensured);
   };
 
   const resetPassword = async (email: string) => {
@@ -321,7 +374,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         authUser,
         profile,
+        profileError,
         loading,
+        retryProfileLoad,
         receivedBlessings,
         sentBlessings,
         savedBlessings,

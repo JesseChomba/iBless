@@ -34,10 +34,43 @@ const ProtectedRoute: React.FC<{
   children: React.ReactNode;
   allowIncompleteOnboarding?: boolean;
 }> = ({ children, allowIncompleteOnboarding = false }) => {
-  const { authUser, profile, loading } = useAuth();
+  const { authUser, profile, profileError, loading, retryProfileLoad, logout } = useAuth();
 
   if (loading) return <FullScreenLoader />;
   if (!authUser) return <Navigate to="/login" replace />;
+
+  if (!profile && profileError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#FAF9F6] dark:bg-[#111318] p-6">
+        <div className="max-w-md w-full rounded-3xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-[#161920] p-8 text-center shadow-sm">
+          <BrandMark size="md" />
+          <h1 className="mt-5 font-display text-xl font-bold text-stone-900 dark:text-stone-100">
+            Could not open your blessing desk
+          </h1>
+          <p className="mt-2 text-sm text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 rounded-xl px-4 py-3 leading-relaxed">
+            {profileError}
+          </p>
+          <div className="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              type="button"
+              onClick={() => retryProfileLoad()}
+              className="rounded-xl bg-orange-600 hover:bg-orange-700 text-white px-5 py-2.5 text-sm font-semibold transition-colors"
+            >
+              Retry
+            </button>
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="rounded-xl border border-stone-300 dark:border-zinc-700 px-5 py-2.5 text-sm font-semibold text-stone-700 dark:text-stone-200 hover:bg-stone-50 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!profile) return <FullScreenLoader />;
 
   if (!allowIncompleteOnboarding && !profile.onboardingComplete) {
