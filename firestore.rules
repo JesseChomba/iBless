@@ -1,0 +1,562 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // -------------------------------------------------------------------------
+    // Global Primitives
+    // -------------------------------------------------------------------------
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidCompositeId(id) {
+      return id is string && id.size() >= 3 && id.size() <= 260 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidUsername(username) {
+      return username is string && username.size() >= 3 && username.size() <= 24 && username.matches('^[a-z0-9_]+$');
+    }
+
+    function isNotBlocked(recipientId, senderId) {
+      return !exists(/databases/$(database)/documents/blocks/$(recipientId + '_' + senderId));
+    }
+
+    function userExists(userId) {
+      return exists(/databases/$(database)/documents/users/$(userId));
+    }
+
+    // -------------------------------------------------------------------------
+    // Entity Validation Blueprints
+    // -------------------------------------------------------------------------
+    function isValidUserPublic(data, userId) {
+      return data.keys().hasAll([
+          'uid', 'username', 'displayName', 'discoverable', 'onboardingComplete',
+          'currentLevel', 'statistics', 'streak', 'preferences', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'uid', 'username', 'displayName', 'photoURL', 'bio', 'discoverable',
+          'onboardingComplete', 'currentLevel', 'statistics', 'streak', 'preferences',
+          'createdAt', 'updatedAt'
+        ])
+        && data.uid == userId
+        && isValidUsername(data.username)
+        && data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 50
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 50000))
+        && (!('bio' in data) || (data.bio is string && data.bio.size() <= 280))
+        && data.discoverable is bool
+        && data.onboardingComplete is bool
+        && data.currentLevel is int && data.currentLevel >= 1 && data.currentLevel <= 6
+        && data.statistics is map
+        && data.statistics.keys().hasAll(['sentCount', 'receivedCount', 'acknowledgedCount', 'savedCount', 'connectionsCount'])
+        && data.statistics.keys().hasOnly(['sentCount', 'receivedCount', 'acknowledgedCount', 'savedCount', 'connectionsCount'])
+        && data.statistics.sentCount is int && data.statistics.sentCount >= 0
+        && data.statistics.receivedCount is int && data.statistics.receivedCount >= 0
+        && data.statistics.acknowledgedCount is int && data.statistics.acknowledgedCount >= 0
+        && data.statistics.savedCount is int && data.statistics.savedCount >= 0
+        && data.statistics.connectionsCount is int && data.statistics.connectionsCount >= 0
+        && data.streak is map
+        && data.streak.keys().hasAll(['current', 'longest', 'lastActiveDate'])
+        && data.streak.keys().hasOnly(['current', 'longest', 'lastActiveDate'])
+        && data.streak.current is int && data.streak.current >= 0
+        && data.streak.longest is int && data.streak.longest >= 0
+        && data.streak.lastActiveDate is string && data.streak.lastActiveDate.size() <= 16
+        && data.preferences is map
+        && data.preferences.keys().hasAll(['defaultVisibility', 'allowRequestsFromAnyone', 'browserNotifications', 'theme'])
+        && data.preferences.keys().hasOnly(['defaultVisibility', 'allowRequestsFromAnyone', 'browserNotifications', 'theme'])
+        && data.preferences.defaultVisibility in ['private', 'public']
+        && data.preferences.allowRequestsFromAnyone is bool
+        && data.preferences.browserNotifications is bool
+        && data.preferences.theme in ['light', 'dark']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data, userId) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt', 'updatedAt'])
+        && data.keys().hasOnly(['uid', 'email', 'createdAt', 'updatedAt'])
+        && data.uid == userId
+        && data.email is string && data.email.size() >= 3 && data.email.size() <= 120
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidBlessing(data, blessingId) {
+      return data.keys().hasAll([
+          'blessingId', 'senderId', 'senderName', 'senderUsername',
+          'recipientId', 'recipientName', 'recipientUsername', 'recipientIds',
+          'message', 'category', 'cardStyle', 'visibility', 'status',
+          'reactions', 'countedByRecipient', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'blessingId', 'senderId', 'senderName', 'senderUsername', 'senderPhotoURL',
+          'recipientId', 'recipientName', 'recipientUsername', 'recipientIds',
+          'message', 'category', 'templateId', 'cardStyle', 'visibility', 'status',
+          'thankYouNote', 'reactions', 'countedByRecipient', 'requestId',
+          'createdAt', 'updatedAt', 'readAt', 'acknowledgedAt'
+        ])
+        && data.blessingId == blessingId
+        && isValidId(data.senderId)
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 50
+        && isValidUsername(data.senderUsername)
+        && (!('senderPhotoURL' in data) || (data.senderPhotoURL is string && data.senderPhotoURL.size() <= 50000))
+        && isValidId(data.recipientId)
+        && data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 50
+        && isValidUsername(data.recipientUsername)
+        && data.recipientIds is list && data.recipientIds.size() >= 1 && data.recipientIds.size() <= 10
+        && data.recipientIds[0] == data.recipientId
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 600
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 40
+        && (!('templateId' in data) || (data.templateId is string && data.templateId.size() <= 64))
+        && data.cardStyle in ['sunbeam', 'mint', 'lavender', 'coral', 'sky', 'midnight']
+        && data.visibility in ['private', 'public']
+        && data.status in ['dispatched', 'delivered', 'read', 'acknowledged']
+        && (!('thankYouNote' in data) || (data.thankYouNote is string && data.thankYouNote.size() <= 300))
+        && data.reactions is map
+        && data.reactions.keys().hasAll(['heart', 'pray', 'sparkle', 'smile'])
+        && data.reactions.keys().hasOnly(['heart', 'pray', 'sparkle', 'smile'])
+        && data.reactions.heart is int && data.reactions.heart >= 0
+        && data.reactions.pray is int && data.reactions.pray >= 0
+        && data.reactions.sparkle is int && data.reactions.sparkle >= 0
+        && data.reactions.smile is int && data.reactions.smile >= 0
+        && data.countedByRecipient is bool
+        && (!('requestId' in data) || (data.requestId is string && data.requestId.size() <= 128))
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('readAt' in data) || data.readAt == null || data.readAt is timestamp)
+        && (!('acknowledgedAt' in data) || data.acknowledgedAt == null || data.acknowledgedAt is timestamp);
+    }
+
+    function isValidBlessingRequest(data, requestId) {
+      return data.keys().hasAll([
+          'requestId', 'senderId', 'senderName', 'senderUsername',
+          'recipientId', 'recipientName', 'recipientUsername',
+          'message', 'category', 'visibility', 'status', 'responseCount',
+          'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'requestId', 'senderId', 'senderName', 'senderUsername',
+          'recipientId', 'recipientName', 'recipientUsername',
+          'message', 'category', 'visibility', 'status', 'responseCount',
+          'createdAt', 'updatedAt', 'fulfilledAt'
+        ])
+        && data.requestId == requestId
+        && isValidId(data.senderId)
+        && data.senderName is string && data.senderName.size() >= 1 && data.senderName.size() <= 50
+        && isValidUsername(data.senderUsername)
+        && data.recipientId is string && data.recipientId.size() <= 128
+        && data.recipientName is string && data.recipientName.size() <= 50
+        && data.recipientUsername is string && data.recipientUsername.size() <= 24
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 400
+        && data.category is string && data.category.size() >= 1 && data.category.size() <= 40
+        && data.visibility in ['private', 'public']
+        && data.status in ['open', 'fulfilled', 'closed']
+        && data.responseCount is int && data.responseCount >= 0
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp
+        && (!('fulfilledAt' in data) || data.fulfilledAt == null || data.fulfilledAt is timestamp);
+    }
+
+    function isValidConnection(data, connectionId) {
+      return data.keys().hasAll([
+          'connectionId', 'requesterId', 'recipientId', 'participants',
+          'requesterName', 'requesterUsername', 'recipientName', 'recipientUsername',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'connectionId', 'requesterId', 'recipientId', 'participants',
+          'requesterName', 'requesterUsername', 'recipientName', 'recipientUsername',
+          'status', 'createdAt', 'updatedAt'
+        ])
+        && data.connectionId == connectionId
+        && isValidId(data.requesterId)
+        && isValidId(data.recipientId)
+        && data.requesterId != data.recipientId
+        && data.participants is list && data.participants.size() == 2
+        && data.requesterId in data.participants
+        && data.recipientId in data.participants
+        && data.requesterName is string && data.requesterName.size() >= 1 && data.requesterName.size() <= 50
+        && isValidUsername(data.requesterUsername)
+        && data.recipientName is string && data.recipientName.size() >= 1 && data.recipientName.size() <= 50
+        && isValidUsername(data.recipientUsername)
+        && data.status in ['pending', 'accepted', 'rejected']
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidNotification(data, notificationId) {
+      return data.keys().hasAll([
+          'notificationId', 'userId', 'actorId', 'type', 'title', 'message',
+          'relatedEntityId', 'linkPath', 'read', 'createdAt'
+        ])
+        && data.keys().hasOnly([
+          'notificationId', 'userId', 'actorId', 'type', 'title', 'message',
+          'relatedEntityId', 'linkPath', 'read', 'createdAt'
+        ])
+        && data.notificationId == notificationId
+        && isValidId(data.userId)
+        && isValidId(data.actorId)
+        && data.type in [
+          'blessing_received', 'blessing_acknowledged', 'request_received',
+          'request_fulfilled', 'connection_request', 'connection_accepted',
+          'public_reaction', 'achievement_unlocked', 'level_up'
+        ]
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 100
+        && data.message is string && data.message.size() >= 1 && data.message.size() <= 300
+        && data.relatedEntityId is string && data.relatedEntityId.size() <= 128
+        && data.linkPath is string && data.linkPath.size() <= 128
+        && data.read is bool
+        && data.createdAt is timestamp;
+    }
+
+    function isValidSavedBlessing(data, saveId) {
+      return data.keys().hasAll(['saveId', 'userId', 'blessingId', 'sourceType', 'blessingSnapshot', 'savedAt'])
+        && data.keys().hasOnly(['saveId', 'userId', 'blessingId', 'sourceType', 'blessingSnapshot', 'savedAt'])
+        && data.saveId == saveId
+        && isValidId(data.userId)
+        && data.blessingId is string && data.blessingId.size() >= 1 && data.blessingId.size() <= 128
+        && data.sourceType in ['blessing', 'daily']
+        && data.blessingSnapshot is map
+        && data.blessingSnapshot.keys().hasAll(['message', 'category', 'senderName', 'recipientName', 'cardStyle', 'createdAtLabel'])
+        && data.blessingSnapshot.keys().hasOnly(['message', 'category', 'senderName', 'senderUsername', 'recipientName', 'cardStyle', 'createdAtLabel'])
+        && data.blessingSnapshot.message is string && data.blessingSnapshot.message.size() >= 1 && data.blessingSnapshot.message.size() <= 600
+        && data.blessingSnapshot.category is string && data.blessingSnapshot.category.size() <= 40
+        && data.blessingSnapshot.senderName is string && data.blessingSnapshot.senderName.size() <= 50
+        && data.blessingSnapshot.recipientName is string && data.blessingSnapshot.recipientName.size() <= 50
+        && data.blessingSnapshot.cardStyle is string && data.blessingSnapshot.cardStyle.size() <= 20
+        && data.blessingSnapshot.createdAtLabel is string && data.blessingSnapshot.createdAtLabel.size() <= 40
+        && data.savedAt is timestamp;
+    }
+
+    function isValidUserAchievement(data, docId) {
+      return data.keys().hasAll(['id', 'userId', 'achievementId', 'name', 'description', 'icon', 'unlockedAt'])
+        && data.keys().hasOnly(['id', 'userId', 'achievementId', 'name', 'description', 'icon', 'unlockedAt'])
+        && data.id == docId
+        && isValidId(data.userId)
+        && isValidId(data.achievementId)
+        && data.name is string && data.name.size() >= 1 && data.name.size() <= 80
+        && data.description is string && data.description.size() >= 1 && data.description.size() <= 200
+        && data.icon is string && data.icon.size() >= 1 && data.icon.size() <= 32
+        && data.unlockedAt is timestamp;
+    }
+
+    // -------------------------------------------------------------------------
+    // Collection Rules
+    // -------------------------------------------------------------------------
+
+    // Connection test doc
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Public user profiles (PII-free)
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId);
+      allow list: if isSignedIn() && (existing().discoverable == true || existing().uid == request.auth.uid);
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserPublic(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().currentLevel == 1
+        && incoming().statistics.sentCount == 0
+        && incoming().statistics.receivedCount == 0
+        && incoming().statistics.acknowledgedCount == 0;
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserPublic(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly([
+          'username', 'displayName', 'photoURL', 'bio', 'discoverable',
+          'onboardingComplete', 'currentLevel', 'statistics', 'streak',
+          'preferences', 'updatedAt'
+        ]);
+    }
+
+    // Private user PII (email only)
+    match /userPrivate/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserPrivate(incoming(), userId)
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isOwner(userId)
+        && isValidId(userId)
+        && isValidUserPrivate(incoming(), userId)
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasOnly(['email', 'updatedAt']);
+    }
+
+    // Username uniqueness registry (no PII; single-doc availability lookup only, listing denied)
+    match /usernames/{username} {
+      allow get: if isValidUsername(username);
+      allow create: if isSignedIn()
+        && isValidUsername(username)
+        && incoming().keys().hasAll(['uid', 'username', 'createdAt'])
+        && incoming().keys().hasOnly(['uid', 'username', 'createdAt'])
+        && incoming().uid == request.auth.uid
+        && incoming().username == username
+        && incoming().createdAt == request.time;
+      allow delete: if isSignedIn() && isValidUsername(username) && existing().uid == request.auth.uid;
+    }
+
+    // Blessings
+    match /blessings/{blessingId} {
+      allow get: if isSignedIn()
+        && isValidId(blessingId)
+        && (resource == null || existing().visibility == 'public' || existing().senderId == request.auth.uid || existing().recipientId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (existing().visibility == 'public' || existing().senderId == request.auth.uid || existing().recipientId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(blessingId)
+        && isValidBlessing(incoming(), blessingId)
+        && incoming().senderId == request.auth.uid
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && incoming().status in ['dispatched', 'delivered']
+        && incoming().countedByRecipient == false
+        && incoming().reactions.heart == 0
+        && incoming().reactions.pray == 0
+        && incoming().reactions.sparkle == 0
+        && incoming().reactions.smile == 0
+        && userExists(incoming().recipientId)
+        && isNotBlocked(incoming().recipientId, request.auth.uid);
+      allow update: if isSignedIn()
+        && isValidId(blessingId)
+        && isValidBlessing(incoming(), blessingId)
+        && incoming().blessingId == existing().blessingId
+        && incoming().senderId == existing().senderId
+        && incoming().recipientId == existing().recipientId
+        && incoming().recipientIds == existing().recipientIds
+        && incoming().message == existing().message
+        && incoming().category == existing().category
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Action 1: Recipient receives / reads / acknowledges / thanks (cannot regress from acknowledged)
+          (
+            existing().recipientId == request.auth.uid
+            && (existing().status != 'acknowledged' || incoming().status == 'acknowledged')
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'status', 'readAt', 'acknowledgedAt', 'thankYouNote', 'countedByRecipient', 'updatedAt'
+            ])
+          )
+          // Action 2: Sender changes visibility explicitly
+          || (
+            existing().senderId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['visibility', 'updatedAt'])
+          )
+          // Action 3: Authenticated user reacts to a public blessing
+          || (
+            existing().visibility == 'public'
+            && incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'updatedAt'])
+          )
+        );
+      allow delete: if isSignedIn()
+        && isValidId(blessingId)
+        && existing().senderId == request.auth.uid;
+    }
+
+    // Public blessing reactions
+    match /blessingReactions/{reactionId} {
+      allow get: if isSignedIn() && isValidCompositeId(reactionId);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidCompositeId(reactionId)
+        && incoming().keys().hasAll(['reactionId', 'blessingId', 'userId', 'emoji', 'createdAt'])
+        && incoming().keys().hasOnly(['reactionId', 'blessingId', 'userId', 'emoji', 'createdAt'])
+        && incoming().reactionId == reactionId
+        && incoming().userId == request.auth.uid
+        && reactionId == (incoming().blessingId + '_' + request.auth.uid)
+        && incoming().emoji in ['heart', 'pray', 'sparkle', 'smile']
+        && incoming().createdAt == request.time
+        && exists(/databases/$(database)/documents/blessings/$(incoming().blessingId))
+        && get(/databases/$(database)/documents/blessings/$(incoming().blessingId)).data.visibility == 'public';
+      allow update: if isSignedIn()
+        && isValidCompositeId(reactionId)
+        && existing().userId == request.auth.uid
+        && incoming().userId == existing().userId
+        && incoming().blessingId == existing().blessingId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['emoji'])
+        && incoming().emoji in ['heart', 'pray', 'sparkle', 'smile'];
+      allow delete: if isSignedIn()
+        && isValidCompositeId(reactionId)
+        && existing().userId == request.auth.uid;
+    }
+
+    // Blessing requests
+    match /blessingRequests/{requestId} {
+      allow get: if isSignedIn()
+        && isValidId(requestId)
+        && (resource == null || existing().visibility == 'public' || existing().senderId == request.auth.uid || existing().recipientId == request.auth.uid);
+      allow list: if isSignedIn()
+        && (existing().visibility == 'public' || existing().senderId == request.auth.uid || existing().recipientId == request.auth.uid);
+      allow create: if isSignedIn()
+        && isValidId(requestId)
+        && isValidBlessingRequest(incoming(), requestId)
+        && incoming().senderId == request.auth.uid
+        && incoming().status == 'open'
+        && incoming().responseCount == 0
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && (
+          incoming().visibility == 'public'
+          || (isValidId(incoming().recipientId) && userExists(incoming().recipientId) && isNotBlocked(incoming().recipientId, request.auth.uid))
+        );
+      allow update: if isSignedIn()
+        && isValidId(requestId)
+        && isValidBlessingRequest(incoming(), requestId)
+        && incoming().requestId == existing().requestId
+        && incoming().senderId == existing().senderId
+        && incoming().recipientId == existing().recipientId
+        && incoming().visibility == existing().visibility
+        && incoming().message == existing().message
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().status != 'closed'
+        && (
+          // Action 1: Requester closes or marks fulfilled
+          (
+            existing().senderId == request.auth.uid
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'fulfilledAt', 'updatedAt'])
+          )
+          // Action 2: Responder fulfills / responds to an open request
+          || (
+            existing().status == 'open'
+            && (existing().visibility == 'public' || existing().recipientId == request.auth.uid)
+            && incoming().responseCount == existing().responseCount + 1
+            && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'responseCount', 'fulfilledAt', 'updatedAt'])
+          )
+        );
+      allow delete: if isSignedIn() && isValidId(requestId) && existing().senderId == request.auth.uid;
+    }
+
+    // Connections
+    match /connections/{connectionId} {
+      allow get: if isSignedIn()
+        && isValidCompositeId(connectionId)
+        && (resource == null || request.auth.uid in existing().participants);
+      allow list: if isSignedIn()
+        && request.auth.uid in existing().participants;
+      allow create: if isSignedIn()
+        && isValidCompositeId(connectionId)
+        && isValidConnection(incoming(), connectionId)
+        && incoming().requesterId == request.auth.uid
+        && incoming().status == 'pending'
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time
+        && userExists(incoming().recipientId)
+        && isNotBlocked(incoming().recipientId, request.auth.uid);
+      allow update: if isSignedIn()
+        && isValidCompositeId(connectionId)
+        && isValidConnection(incoming(), connectionId)
+        && incoming().connectionId == existing().connectionId
+        && incoming().requesterId == existing().requesterId
+        && incoming().recipientId == existing().recipientId
+        && incoming().participants == existing().participants
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && existing().status == 'pending'
+        && existing().recipientId == request.auth.uid
+        && incoming().status in ['accepted', 'rejected']
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt']);
+      allow delete: if isSignedIn()
+        && isValidCompositeId(connectionId)
+        && request.auth.uid in existing().participants;
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow get: if isSignedIn() && isValidId(notificationId) && existing().userId == request.auth.uid;
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidId(notificationId)
+        && isValidNotification(incoming(), notificationId)
+        && incoming().actorId == request.auth.uid
+        && incoming().read == false
+        && incoming().createdAt == request.time
+        && userExists(incoming().userId)
+        && isNotBlocked(incoming().userId, request.auth.uid);
+      allow update: if isSignedIn()
+        && isValidId(notificationId)
+        && existing().userId == request.auth.uid
+        && isValidNotification(incoming(), notificationId)
+        && incoming().userId == existing().userId
+        && incoming().actorId == existing().actorId
+        && incoming().createdAt == existing().createdAt
+        && incoming().diff(existing()).affectedKeys().hasOnly(['read']);
+      allow delete: if isSignedIn() && isValidId(notificationId) && existing().userId == request.auth.uid;
+    }
+
+    // Saved blessings
+    match /savedBlessings/{saveId} {
+      allow get: if isSignedIn() && isValidCompositeId(saveId) && (resource == null || existing().userId == request.auth.uid);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidCompositeId(saveId)
+        && isValidSavedBlessing(incoming(), saveId)
+        && incoming().userId == request.auth.uid
+        && saveId == (request.auth.uid + '_' + incoming().blessingId)
+        && incoming().savedAt == request.time;
+      allow delete: if isSignedIn() && isValidCompositeId(saveId) && existing().userId == request.auth.uid;
+    }
+
+    // User achievements
+    match /userAchievements/{userAchievementId} {
+      allow get: if isSignedIn() && isValidCompositeId(userAchievementId) && (resource == null || existing().userId == request.auth.uid);
+      allow list: if isSignedIn() && existing().userId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidCompositeId(userAchievementId)
+        && isValidUserAchievement(incoming(), userAchievementId)
+        && incoming().userId == request.auth.uid
+        && userAchievementId == (request.auth.uid + '_' + incoming().achievementId)
+        && incoming().unlockedAt == request.time;
+    }
+
+    // Blocks
+    match /blocks/{blockId} {
+      allow get: if isSignedIn()
+        && isValidCompositeId(blockId)
+        && (resource == null || existing().blockerId == request.auth.uid || existing().blockedId == request.auth.uid);
+      allow list: if isSignedIn() && existing().blockerId == request.auth.uid;
+      allow create: if isSignedIn()
+        && isValidCompositeId(blockId)
+        && incoming().keys().hasAll(['blockId', 'blockerId', 'blockedId', 'blockedUsername', 'createdAt'])
+        && incoming().keys().hasOnly(['blockId', 'blockerId', 'blockedId', 'blockedUsername', 'createdAt'])
+        && incoming().blockId == blockId
+        && incoming().blockerId == request.auth.uid
+        && isValidId(incoming().blockedId)
+        && incoming().blockedId != request.auth.uid
+        && blockId == (request.auth.uid + '_' + incoming().blockedId)
+        && incoming().blockedUsername is string && incoming().blockedUsername.size() >= 3 && incoming().blockedUsername.size() <= 24
+        && incoming().createdAt == request.time;
+      allow delete: if isSignedIn() && isValidCompositeId(blockId) && existing().blockerId == request.auth.uid;
+    }
+  }
+}

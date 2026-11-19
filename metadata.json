@@ -1,0 +1,6 @@
+{
+  "name": "iBless",
+  "description": "Spread blessings. Share smiles. A playful, universal social application to send, receive, request, save, and share digital blessings.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

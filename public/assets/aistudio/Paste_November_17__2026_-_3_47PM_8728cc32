@@ -1,0 +1,1283 @@
+# MASTER DEVELOPMENT PROMPT — iBless
+
+## 1. ROLE AND OBJECTIVE
+
+Act as a senior full-stack software engineer, UI/UX designer and application architect.
+
+Your task is to design and build a complete, functional, responsive web application called **iBless**.
+
+Do not merely produce a design prototype, static mock-up or frontend demonstration. Build an actual working application with real authentication, persistent data storage, multi-user interactions and functional features.
+
+You are responsible for:
+- Designing the application.
+- Establishing the technical architecture.
+- Implementing the frontend.
+- Implementing Firebase integration.
+- Designing and implementing the database structure.
+- Implementing authentication and access controls.
+- Implementing all core user journeys.
+- Testing the application.
+- Providing clear setup and deployment instructions.
+
+Work autonomously wherever requirements are sufficiently defined. Make sensible implementation decisions rather than repeatedly asking for clarification.
+
+If a Firebase configuration or other external credential is required, create the necessary configuration structure and clearly document what I need to supply. Never invent credentials or claim that an external service has been connected when it has not.
+
+---
+
+# 2. PRODUCT OVERVIEW
+
+### Application name
+iBless
+
+### Tagline
+Spread blessings. Share smiles.
+
+### Product concept
+
+iBless is a playful, universal social application that allows people to send, receive, request, save and share digital blessings.
+
+The original inspiration comes from the tradition of receiving blessings from older family members, particularly during cultural and religious celebrations.
+
+The application takes that concept and digitises it.
+
+Users should be able to:
+- Send personalised blessings to friends and other registered users.
+- Receive blessings from other people.
+- Request blessings when they need encouragement or goodwill.
+- Respond to blessings with acknowledgements, reactions or reciprocal blessings.
+- Save meaningful blessings.
+- Share blessings outside the application.
+- Track their blessing activity.
+- Unlock achievements and progress through humorous blessing-related levels.
+
+### Product personality
+
+iBless is a joke application with a genuinely functional foundation.
+
+Its personality should be:
+- Wholesome.
+- Playful.
+- Colourful.
+- Friendly.
+- Slightly absurd.
+- Humorous without being offensive.
+
+The humour should come from treating blessings as a surprisingly organised digital service.
+
+For example:
+- "Blessing successfully dispatched!"
+- "The heavens are currently quiet."
+- "Initiate blessing transfer."
+- "You've been blessed. Your day just got an upgrade."
+- "Congratulations. You've been promoted to Senior Blessing Officer."
+
+Do not make fun of religious beliefs, religious practices or cultural traditions.
+
+### Universal approach
+
+The application must not be restricted to any particular religion, nationality or culture.
+
+Requirements:
+- No mandatory religious affiliation.
+- No assumption about users' religious beliefs.
+- No mandatory religious symbols.
+- General-purpose blessing categories.
+- Users can incorporate their own cultural or religious expressions in personalised messages.
+
+---
+
+# 3. DEVELOPMENT PHILOSOPHY
+
+This is a small personal project intended to be shared with friends.
+
+It is NOT a commercial SaaS platform.
+
+Prioritise:
+1. Functional completeness.
+2. Good design.
+3. Simplicity.
+4. Maintainability.
+5. Reliable multi-user interactions.
+6. Low operating costs.
+7. Straightforward deployment.
+
+Avoid:
+- Microservices.
+- Enterprise architecture.
+- Unnecessary abstractions.
+- Complex role-based administration systems.
+- Subscription management.
+- Payment processing.
+- In-app purchases.
+- Artificial currencies.
+- Unnecessary AI integrations.
+- Expensive infrastructure.
+- Features that introduce complexity without improving the user experience.
+
+Use the simplest reliable implementation for each requirement.
+
+The objective is a polished, fully functional application, not an unnecessarily complicated engineering exercise.
+
+---
+
+# 4. TECHNOLOGY STACK
+
+Use the following technologies unless a genuine technical limitation requires an alternative.
+
+### Frontend
+- React.
+- TypeScript.
+- Vite.
+- Tailwind CSS.
+- React Router for navigation.
+
+### Backend and infrastructure
+Use Firebase.
+
+Services:
+- Firebase Authentication: Email/password authentication.
+- Cloud Firestore: Persistent application data.
+- Firebase Storage: User profile pictures and other uploaded assets where necessary.
+- Firebase Hosting: Deployment.
+- Firebase Cloud Messaging: Optional browser push notifications.
+
+### Additional libraries
+
+Use appropriate lightweight libraries where beneficial:
+- Lucide React for icons.
+- A QR code generation library.
+- A library for generating downloadable PNG blessing cards.
+- A lightweight animation library if necessary.
+
+Avoid excessive dependencies.
+
+### Application architecture
+
+Use a reasonably organised structure separating:
+- Components.
+- Pages.
+- Layouts.
+- Hooks.
+- Services.
+- Firebase configuration.
+- Types and interfaces.
+- Utilities.
+- Static content.
+- Styles.
+
+Keep the architecture understandable and maintainable.
+
+Do not overengineer it.
+
+---
+
+# 5. AUTHENTICATION AND USER ACCOUNTS
+
+Implement actual Firebase Authentication.
+
+Supported functionality:
+
+### Registration
+Users register using:
+- Email address.
+- Password.
+- Display name.
+- Unique username.
+
+### Login
+Users log in using email and password.
+
+### Additional authentication functionality
+- Logout.
+- Password reset.
+- Session persistence.
+- Protected application routes.
+- Appropriate authentication error messages.
+
+### User profiles
+
+Each user should have:
+
+- Unique user ID.
+- Display name.
+- Unique username.
+- Email address.
+- Optional profile picture.
+- Optional biography.
+- Account creation date.
+- Current blessing level.
+- Total blessings sent.
+- Total blessings received.
+- Current streak.
+- Longest streak.
+- Achievement records.
+
+Allow users to edit their display name, profile picture and biography.
+
+Usernames must be unique.
+
+### Onboarding
+
+Introduce a short onboarding experience after registration.
+
+Suggested sequence:
+
+1. Welcome to iBless.
+2. Choose a display name.
+3. Select a username.
+4. Optionally upload a profile picture.
+5. Discover or invite friends.
+6. Receive an introductory welcome blessing.
+7. Enter the dashboard.
+
+Do not make onboarding unnecessarily long.
+
+---
+
+# 6. USER DISCOVERY AND SOCIAL CONNECTIONS
+
+Users should be able to find one another through several methods.
+
+### Username search
+Allow users to search for registered users by username.
+
+### Friends and connections
+Implement:
+- Send connection request.
+- Accept connection request.
+- Reject connection request.
+- Cancel outgoing request.
+- Remove connection.
+- View connections.
+
+### Non-friend interactions
+
+Users must be able to send blessings to other registered users without necessarily being connected.
+
+Knowing someone's username should be sufficient to initiate a blessing.
+
+### Shareable profiles
+
+Every user should have a unique profile URL.
+
+Example:
+
+`https://your-domain.com/u/username`
+
+Include:
+- Copy profile link.
+- Generate profile QR code.
+- Share profile externally.
+
+### Contact discovery
+
+Include optional contact discovery as a secondary feature.
+
+Only access contacts following explicit user permission.
+
+If browser capabilities do not support a particular contact-discovery method, provide a clear alternative rather than pretending the functionality works.
+
+### Blocking
+
+Users should be able to block another user.
+
+Blocked users must not be able to send unwanted blessings or requests to the person who blocked them.
+
+Keep blocking functionality straightforward.
+
+---
+
+# 7. THE BLESSING ENGINE
+
+This is the central feature of iBless.
+
+Design and implement a proper blessing creation and exchange system.
+
+### 7.1 Sending blessings
+
+The sending process should follow this sequence:
+
+1. User selects "Send a blessing".
+2. Select a recipient.
+3. Choose a blessing category or start from scratch.
+4. Select an optional predefined template.
+5. Customise the blessing message.
+6. Preview the blessing card.
+7. Choose visibility.
+8. Send the blessing.
+9. Display a successful dispatch animation.
+
+### 7.2 Blessing categories
+
+Include the following categories initially:
+
+- Prosperity.
+- Good health.
+- Love.
+- Happiness.
+- Wisdom.
+- Success.
+- Good fortune.
+- Peace.
+- Protection.
+- Gratitude.
+- Friendship.
+- General goodwill.
+
+Each category should have an appropriate icon and description.
+
+Allow users to write completely custom blessings without selecting a category.
+
+Templates are suggestions, not restrictions.
+
+### 7.3 Custom blessings
+
+Users must be able to write personalised messages.
+
+Requirements:
+- Text input.
+- Character limit with a visible counter.
+- Optional category.
+- Optional template.
+- Live preview.
+- Validation.
+- Ability to edit before sending.
+
+### 7.4 Blessing cards
+
+Create attractive visual blessing cards.
+
+Include several card styles with different colours, backgrounds and typography.
+
+Each card should display:
+- Blessing message.
+- Sender's display name.
+- Recipient's display name.
+- Date.
+- Optional category.
+- Appropriate decorative elements.
+
+Cards should look good on mobile and desktop.
+
+### 7.5 Blessing privacy
+
+Blessings must be PRIVATE by default.
+
+When sending, users may explicitly choose to make a blessing public.
+
+Private blessings must only be accessible to their intended participants.
+
+Public blessings may appear in the community feed.
+
+Changing a blessing's visibility should require an explicit action.
+
+### 7.6 Receiving blessings
+
+Recipients should have a dedicated inbox.
+
+Each blessing should support:
+- Opening and reading.
+- Acknowledging receipt.
+- Reacting.
+- Sending a thank-you.
+- Sending a reciprocal blessing.
+- Saving to a personal collection.
+- Sharing externally if permitted.
+
+Use amusing status labels where appropriate.
+
+Examples:
+- Dispatched.
+- Delivered.
+- Received.
+- Acknowledged.
+
+### 7.7 Blessing history
+
+Maintain separate views for:
+- Received blessings.
+- Sent blessings.
+- Saved blessings.
+- Publicly shared blessings.
+
+Provide chronological sorting and basic filtering by category.
+
+### 7.8 Group blessings
+
+Do not implement group blessings in the initial release.
+
+However, structure the data model sensibly enough that multiple recipients can be supported in a future enhancement.
+
+---
+
+# 8. BLESSING REQUESTS
+
+Users should be able to request blessings from other users.
+
+### Private requests
+
+A user can select another user and send a private blessing request.
+
+### Public requests
+
+Users can optionally publish a blessing request to the community feed.
+
+Example:
+
+"I have an important examination tomorrow. Could use a little blessing! 🙏"
+
+Other users can respond by sending blessings.
+
+### Request functionality
+
+Implement:
+- Create request.
+- Select private or public visibility.
+- View incoming requests.
+- View outgoing requests.
+- Respond to requests.
+- Close or cancel requests.
+- Mark requests as fulfilled where appropriate.
+
+Requests should have appropriate timestamps and statuses.
+
+---
+
+# 9. PUBLIC BLESSING FEED
+
+Implement a simple community feed.
+
+The feed should display blessings and requests explicitly made public.
+
+Users should be able to:
+- View public blessings.
+- View public requests.
+- React to public blessings.
+- Respond to public requests with blessings.
+- Visit the author's profile.
+
+Private content must never appear in the feed.
+
+Do not implement a complicated social-media recommendation algorithm.
+
+A simple chronological feed is sufficient.
+
+Include sensible pagination or limited loading to avoid unnecessarily loading the entire database.
+
+---
+
+# 10. EXTERNAL SHARING
+
+Allow users to share blessings outside iBless.
+
+Implement:
+
+### Download as image
+Allow users to download blessing cards as PNG images.
+
+### Copy text
+Allow users to copy the blessing message.
+
+### Shareable links
+Allow users to generate a link to a blessing when sharing is permitted.
+
+Respect the blessing's visibility settings.
+
+A private blessing must not become publicly accessible simply because someone generates a sharing link.
+
+### WhatsApp
+Provide a WhatsApp sharing option using an appropriate share URL or the browser's native sharing functionality.
+
+### Native sharing
+Use the Web Share API where supported.
+
+Provide sensible fallbacks when browser sharing is unavailable.
+
+---
+
+# 11. NOTIFICATIONS
+
+Implement a notification centre.
+
+Notification types should include:
+
+- Incoming blessing.
+- Incoming blessing request.
+- Accepted connection request.
+- New connection.
+- Reaction to a public blessing.
+- Response to a blessing request.
+- Achievement unlocked.
+- Level advancement.
+
+### Notification functionality
+- View notifications.
+- Mark as read.
+- Mark all as read.
+- Navigate to the relevant content.
+- Display unread notification count.
+
+### Browser notifications
+
+Support optional browser push notifications.
+
+Ask for permission appropriately.
+
+Do not repeatedly prompt users who decline.
+
+In-app notifications must remain functional even if browser notifications are unavailable or disabled.
+
+---
+
+# 12. DAILY BLESSINGS
+
+Implement a daily blessing feature using a locally maintained collection of at least 100 predefined messages.
+
+Categories should include:
+- Happiness.
+- Success.
+- Prosperity.
+- Wisdom.
+- Health.
+- Love.
+- Friendship.
+- Peace.
+- Gratitude.
+- General encouragement.
+
+Requirements:
+- Display one daily blessing.
+- Rotate the message daily.
+- Keep the selected message consistent throughout the day for each user or use a consistent global daily selection.
+- Allow users to save the daily blessing.
+- Allow users to share it.
+- Include a suitable visual presentation.
+
+Do not require an external AI API to generate daily blessings.
+
+The collection should be stored locally within the application or seeded into the database.
+
+---
+
+# 13. GAMIFICATION
+
+Gamification should be entertaining and secondary to the application's actual purpose.
+
+Do not introduce leaderboards.
+
+### 13.1 Statistics
+
+Provide a personal statistics dashboard displaying:
+
+- Total blessings sent.
+- Total blessings received.
+- Total blessings acknowledged.
+- Current streak.
+- Longest streak.
+- Achievements unlocked.
+- Current level.
+
+### 13.2 Streaks
+
+Track consecutive days of blessing activity.
+
+Define a qualifying activity as sending or receiving at least one blessing on a given calendar day.
+
+A user should not gain multiple streak days by performing multiple actions on the same day.
+
+Display streak information attractively.
+
+Use appropriate date handling and a consistent timezone strategy.
+
+### 13.3 Achievements
+
+Create a collection of humorous achievements.
+
+Initial examples:
+
+- First Blessing: Send your first blessing.
+- Goodwill Ambassador: Send 10 blessings.
+- Blessing Enthusiast: Send 25 blessings.
+- Generosity Department: Send 50 blessings.
+- Receiver of Good Fortune: Receive 10 blessings.
+- The Thankful One: Acknowledge 10 blessings.
+- Consistency Officer: Maintain a 7-day streak.
+- The Eternal Optimist: Maintain a 30-day streak.
+- Social Blessing Coordinator: Connect with 10 users.
+
+Achievements should unlock automatically when their conditions are met.
+
+Show an achievement-unlocked notification.
+
+### 13.4 Blessing levels
+
+Implement a simple progression system.
+
+Suggested levels:
+
+1. Blessing Novice.
+2. Junior Blessing Officer.
+3. Certified Goodwill Distributor.
+4. Senior Blessing Officer.
+5. Chief Blessing Distributor.
+6. Grandmaster of Good Fortune.
+
+Progression should be based on a combination of blessings sent, achievements and activity streaks.
+
+Display:
+- Current level.
+- Level icon.
+- Progress towards next level.
+- Next level requirements.
+
+Make progression rules transparent.
+
+Do not allow users to purchase levels or achievements.
+
+### 13.5 Gamification integrity
+
+Avoid awarding achievements or statistics simply because a user repeatedly refreshes the application.
+
+Prevent duplicate counting of the same blessing or event.
+
+Use database transactions where appropriate.
+
+---
+
+# 14. APPLICATION PAGES AND NAVIGATION
+
+Implement the following pages.
+
+### 14.1 Landing page
+
+A welcoming public homepage.
+
+Include:
+- iBless logo and branding.
+- Tagline.
+- Short explanation of the application.
+- Sample blessing card.
+- Registration button.
+- Login button.
+- A few illustrative feature sections.
+
+The landing page should immediately communicate the application's humour and purpose.
+
+### 14.2 Authentication pages
+
+- Register.
+- Login.
+- Password recovery.
+
+### 14.3 Dashboard
+
+The dashboard should be the central user landing page.
+
+Display:
+- Personal welcome message.
+- User level and progress.
+- Daily blessing.
+- Quick send-blessing action.
+- Recent incoming blessings.
+- Blessing statistics.
+- Current streak.
+- Recent achievements.
+- Notifications summary.
+
+Avoid clutter.
+
+### 14.4 Send blessing page
+
+Implement the complete blessing creation flow.
+
+### 14.5 Inbox
+
+Display received blessings.
+
+Include filters for unread, read, acknowledged and saved.
+
+### 14.6 Friends
+
+Allow users to search, connect and manage relationships.
+
+### 14.7 Public feed
+
+Display publicly shared blessings and requests.
+
+### 14.8 Requests
+
+Manage incoming and outgoing blessing requests.
+
+### 14.9 Archive
+
+Display historical sent and received blessings.
+
+### 14.10 Achievements
+
+Display unlocked and locked achievements.
+
+### 14.11 Profile
+
+Display:
+- Profile picture.
+- Display name.
+- Username.
+- Biography.
+- Current level.
+- Public statistics.
+- Public blessings where applicable.
+
+### 14.12 Settings
+
+Include:
+- Profile editing.
+- Privacy preferences.
+- Notification preferences.
+- Password/account options.
+- Logout.
+
+---
+
+# 15. UI/UX AND VISUAL DESIGN
+
+This is an important requirement.
+
+The application must look like a deliberately designed, modern application rather than a generic AI-generated dashboard.
+
+### Visual direction
+
+Use a playful, colourful and welcoming design language.
+
+Suggested palette:
+- Warm cream.
+- Peach.
+- Coral.
+- Lavender.
+- Soft purple.
+- Mint green.
+- Sky blue.
+- Sunny yellow.
+
+Use colours consistently and ensure sufficient text contrast.
+
+### Design characteristics
+
+- Rounded cards.
+- Friendly typography.
+- Attractive illustrations.
+- Appropriate emoji usage.
+- Colourful category indicators.
+- Smooth hover states.
+- Subtle shadows.
+- Clear visual hierarchy.
+- Generous whitespace.
+- Consistent spacing.
+- Responsive layouts.
+
+### Navigation
+
+Desktop:
+- Sidebar navigation.
+- Main content area.
+- Notification access.
+- User profile access.
+
+Mobile:
+- Bottom navigation.
+- Mobile-friendly cards.
+- Touch-friendly controls.
+- Responsive forms.
+
+Suggested main navigation:
+
+1. Home.
+2. Friends.
+3. Send Blessing.
+4. Inbox.
+5. Profile.
+
+Other features can be accessed through the dashboard or secondary navigation.
+
+### Animations
+
+Include tasteful animations for:
+- Sending a blessing.
+- Receiving a blessing.
+- Unlocking an achievement.
+- Level advancement.
+- Successful actions.
+
+Confetti or celebratory effects can be used sparingly.
+
+Do not sacrifice performance for animations.
+
+### Dark mode
+
+Include a basic dark mode if it can be implemented without substantial additional complexity.
+
+### General UX requirements
+
+Every page should have:
+- Loading states.
+- Empty states.
+- Error states.
+- Success feedback.
+- Clear navigation.
+- Appropriate confirmation for destructive actions.
+
+Never leave buttons that appear functional but do nothing.
+
+---
+
+# 16. DATABASE DESIGN
+
+Design a sensible Firestore data structure.
+
+Suggested collections:
+
+### users
+
+Store:
+- uid.
+- email.
+- username.
+- displayName.
+- photoURL.
+- bio.
+- createdAt.
+- currentLevel.
+- statistics.
+- streak information.
+- preferences.
+
+### blessings
+
+Store:
+- blessingId.
+- senderId.
+- recipientId.
+- message.
+- category.
+- templateId (optional).
+- visibility.
+- status.
+- reactions.
+- createdAt.
+- readAt.
+- acknowledgedAt.
+
+### blessingRequests
+
+Store:
+- requestId.
+- senderId.
+- recipientId (optional for public requests).
+- message.
+- category.
+- visibility.
+- status.
+- createdAt.
+- fulfilledAt.
+
+### connections
+
+Store:
+- connectionId.
+- requesterId.
+- recipientId.
+- status.
+- createdAt.
+
+### notifications
+
+Store:
+- notificationId.
+- userId.
+- type.
+- title.
+- message.
+- relatedEntityId.
+- read.
+- createdAt.
+
+### achievements
+
+Store:
+- achievementId.
+- name.
+- description.
+- icon.
+- unlockCondition.
+
+### userAchievements
+
+Store:
+- userId.
+- achievementId.
+- unlockedAt.
+
+### savedBlessings
+
+Store:
+- userId.
+- blessingId.
+- savedAt.
+
+### dailyBlessings
+
+Store:
+- blessingId.
+- message.
+- category.
+- attribution (optional).
+
+You may refine the schema where necessary.
+
+Avoid duplicating unnecessary data.
+
+Use appropriate document references or identifiers.
+
+Create the necessary Firestore indexes.
+
+### Data integrity
+
+Ensure:
+- Each blessing has a valid sender.
+- Each blessing has a valid recipient.
+- Private content cannot be accessed by unrelated users.
+- Users cannot modify another user's profile.
+- Users cannot arbitrarily modify another user's blessings.
+- Duplicate connections are prevented.
+- Duplicate achievement unlocks are prevented.
+
+---
+
+# 17. FIREBASE SECURITY
+
+Security is important even though this is a personal joke application.
+
+Implement actual Firestore security rules.
+
+Requirements:
+
+- Authenticated users only for private application functionality.
+- Users can update only their own profiles.
+- Users can read only blessings they are entitled to access.
+- Public blessings are readable by authenticated users.
+- Private blessings are accessible only to their sender and recipient.
+- Only authorised users can modify blessing status.
+- Only relevant participants can access private requests.
+- Users cannot impersonate other users.
+- Users cannot access private notifications belonging to other accounts.
+- Users cannot arbitrarily manipulate other users' statistics.
+
+Implement appropriate Firebase Storage rules for profile pictures.
+
+Never expose private credentials or service-account keys in frontend code.
+
+Firebase's public web configuration may be supplied through the normal application configuration process; actual access control must come from security rules and authentication.
+
+Provide clear instructions for deploying security rules.
+
+Do not claim the application is secure without implementing and testing the rules.
+
+---
+
+# 18. PERFORMANCE AND RESPONSIVENESS
+
+The application should:
+- Load quickly.
+- Work smoothly on ordinary laptops.
+- Work on modern mobile browsers.
+- Avoid unnecessarily large dependencies.
+- Avoid excessive Firestore reads.
+- Use pagination where appropriate.
+- Optimise uploaded images.
+- Avoid unnecessarily complicated animations.
+- Handle network interruptions gracefully.
+
+Support reasonable offline behaviour for static content where practical.
+
+Do not cache private content in ways that could expose it to another account using the same device.
+
+---
+
+# 19. PWA SUPPORT
+
+Implement basic Progressive Web App functionality.
+
+Include:
+- Web app manifest.
+- Application icons or clearly documented icon placeholders.
+- Appropriate theme colours.
+- Service worker.
+- Installability where supported.
+
+Ensure the application remains usable in a normal browser without installation.
+
+---
+
+# 20. TESTING AND ACCEPTANCE CRITERIA
+
+Do not consider the application complete merely because it renders successfully.
+
+Test the following journeys.
+
+### Authentication
+1. Register a new account.
+2. Log out.
+3. Log back in.
+4. Reset a password.
+5. Confirm protected pages require authentication.
+
+### User connections
+1. Create two separate user accounts.
+2. Search for one account from the other.
+3. Send a connection request.
+4. Accept the request.
+5. Verify the connection appears.
+
+### Blessing exchange
+1. User A sends a blessing to User B.
+2. User B receives it.
+3. User B opens it.
+4. User B acknowledges it.
+5. User B sends a reciprocal blessing.
+6. Both users can see their appropriate blessing histories.
+
+### Privacy
+1. Send a private blessing.
+2. Verify an unrelated third account cannot access it.
+3. Make another blessing public.
+4. Verify it appears in the public feed.
+5. Verify private information remains inaccessible.
+
+### Requests
+1. Create a private request.
+2. Respond to it.
+3. Create a public request.
+4. Verify another user can discover and respond to it.
+
+### Sharing
+1. Download a blessing card as PNG.
+2. Copy blessing text.
+3. Generate a permitted sharing link.
+4. Test WhatsApp sharing.
+
+### Gamification
+1. Send qualifying blessings.
+2. Verify statistics update.
+3. Verify streak tracking.
+4. Verify achievements unlock.
+5. Verify level progression.
+
+### Notifications
+1. Generate an incoming blessing.
+2. Verify the recipient receives an in-app notification.
+3. Mark it as read.
+4. Verify the unread count updates.
+
+### General UX
+- Test desktop layouts.
+- Test mobile layouts.
+- Test loading states.
+- Test empty states.
+- Test form validation.
+- Test error handling.
+- Test navigation.
+- Verify all visible interactive controls perform their intended actions.
+
+Where automated testing is feasible, implement appropriate tests.
+
+---
+
+# 21. IMPLEMENTATION WORKFLOW
+
+Build the application in logical phases.
+
+Do not stop after creating the design or project skeleton.
+
+### Phase 1: Project foundation
+- Initialise project.
+- Configure dependencies.
+- Establish design system.
+- Configure routing.
+- Create responsive layouts.
+- Configure Firebase.
+
+### Phase 2: Authentication and profiles
+- Registration.
+- Login.
+- Logout.
+- Password recovery.
+- User profiles.
+- Onboarding.
+
+### Phase 3: Core blessing engine
+- Blessing creation.
+- Templates.
+- Categories.
+- Card previews.
+- Sending.
+- Receiving.
+- Acknowledgements.
+- Blessing history.
+
+### Phase 4: Social features
+- User search.
+- Connections.
+- Requests.
+- Public feed.
+- Privacy controls.
+- Blocking.
+
+### Phase 5: Notifications and sharing
+- Notification centre.
+- Browser push where configured.
+- PNG downloads.
+- Sharing links.
+- WhatsApp sharing.
+
+### Phase 6: Gamification
+- Statistics.
+- Streaks.
+- Achievements.
+- Levels.
+- Daily blessings.
+
+### Phase 7: Finalisation
+- PWA support.
+- Responsive refinements.
+- Security rules.
+- Testing.
+- Performance checks.
+- Deployment documentation.
+
+These phases are an implementation sequence, not separate deliverables requiring my approval after each stage. Continue through them wherever possible.
+
+---
+
+# 22. SETUP AND DEPLOYMENT DOCUMENTATION
+
+Provide a comprehensive README.
+
+It should explain:
+
+1. Prerequisites.
+2. Installing dependencies.
+3. Configuring Firebase.
+4. Creating a Firebase project.
+5. Enabling email/password authentication.
+6. Creating Firestore.
+7. Configuring Firebase Storage.
+8. Configuring security rules.
+9. Configuring browser push notifications.
+10. Environment variables.
+11. Running the application locally.
+12. Building for production.
+13. Deploying to Firebase Hosting.
+
+Provide an `.env.example` file.
+
+Do not include actual credentials in source control.
+
+If Firebase services require manual configuration, clearly identify the exact steps.
+
+Include troubleshooting instructions for common setup problems.
+
+---
+
+# 23. IMPORTANT IMPLEMENTATION RULES
+
+These instructions take priority throughout development.
+
+1. Build a real application, not a static visual prototype.
+
+2. Use Firebase Authentication and Firestore for actual multi-user functionality.
+
+3. Never substitute hardcoded demo accounts for real authentication.
+
+4. Never use local storage as a replacement for the database for important application records.
+
+5. Every interactive button must work.
+
+6. Every form must validate and submit appropriately.
+
+7. Every navigation link must lead to an actual implemented page.
+
+8. All important user actions must persist after refreshing the browser.
+
+9. Handle loading, success and failure states.
+
+10. Respect privacy settings.
+
+11. Never expose private user information through public queries.
+
+12. Keep the application lightweight and understandable.
+
+13. Do not introduce unnecessary features that were not requested.
+
+14. Do not use external AI APIs for routine blessing generation.
+
+15. Do not implement group blessings in the initial version.
+
+16. Do not implement leaderboards, payments or subscriptions.
+
+17. Do not claim a feature is implemented when it is merely represented visually.
+
+18. Do not leave TODO placeholders for core functionality.
+
+19. If an external integration cannot be completed without credentials or configuration, implement the integration structure, document the missing requirement and provide a graceful fallback.
+
+20. Prioritise working functionality over adding more screens.
+
+---
+
+# 24. FINAL DELIVERABLE
+
+The final result should be a complete application called iBless.
+
+It should have:
+- A polished and colourful user interface.
+- Working registration and authentication.
+- Persistent user profiles.
+- Real multi-user blessing exchanges.
+- Private and public blessings.
+- Blessing requests.
+- User connections.
+- A public community feed.
+- A functional inbox.
+- Notifications.
+- Downloadable blessing cards.
+- Daily blessings.
+- Statistics.
+- Streaks.
+- Achievements.
+- Humorous progression levels.
+- Responsive layouts.
+- Basic PWA functionality.
+- Firebase security rules.
+- Setup and deployment documentation.
+
+### FINAL INSTRUCTION
+
+Begin by examining the available project environment and establishing the application foundation.
+
+Then implement the application according to this specification.
+
+Make sensible decisions independently.
+
+Do not spend the entire task producing a plan or describing what you intend to build.
+
+Actually build it.
+
+If a requirement cannot be completed, explain precisely why and what configuration or action is needed.
+
+The ultimate test is simple:
+
+Two different people should be able to register, find each other, exchange actual blessings, receive notifications, save messages and see their progress update.
+
+**Make iBless delightful, functional, colourful and just a little ridiculous.**
+
+Let's spread some blessings. 🙏

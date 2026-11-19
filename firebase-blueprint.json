@@ -1,0 +1,237 @@
+{
+  "entities": {
+    "UserPublic": {
+      "title": "UserPublic",
+      "description": "Publicly discoverable user profile without PII (no email).",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "username": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "displayName": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "photoURL": { "type": "string", "maxLength": 50000 },
+        "bio": { "type": "string", "maxLength": 280 },
+        "discoverable": { "type": "boolean" },
+        "onboardingComplete": { "type": "boolean" },
+        "currentLevel": { "type": "number" },
+        "statistics": { "type": "object" },
+        "streak": { "type": "object" },
+        "preferences": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "displayName", "discoverable", "onboardingComplete", "currentLevel", "statistics", "streak", "preferences", "createdAt", "updatedAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Strictly owner-only PII such as email address.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "email": { "type": "string", "minLength": 3, "maxLength": 120 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "createdAt", "updatedAt"]
+    },
+    "UsernameRegistry": {
+      "title": "UsernameRegistry",
+      "description": "Uniqueness registry mapping lowercase username to uid.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "username": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "username", "createdAt"]
+    },
+    "Blessing": {
+      "title": "Blessing",
+      "description": "A digital blessing exchanged between users.",
+      "type": "object",
+      "properties": {
+        "blessingId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "senderUsername": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "senderPhotoURL": { "type": "string", "maxLength": 50000 },
+        "recipientId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "recipientName": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "recipientUsername": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "recipientIds": { "type": "array" },
+        "message": { "type": "string", "minLength": 1, "maxLength": 600 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "templateId": { "type": "string", "maxLength": 64 },
+        "cardStyle": { "type": "string", "enum": ["sunbeam", "mint", "lavender", "coral", "sky", "midnight"] },
+        "visibility": { "type": "string", "enum": ["private", "public"] },
+        "status": { "type": "string", "enum": ["dispatched", "delivered", "read", "acknowledged"] },
+        "thankYouNote": { "type": "string", "maxLength": 300 },
+        "reactions": { "type": "object" },
+        "countedByRecipient": { "type": "boolean" },
+        "requestId": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["blessingId", "senderId", "senderName", "senderUsername", "recipientId", "recipientName", "recipientUsername", "recipientIds", "message", "category", "cardStyle", "visibility", "status", "reactions", "countedByRecipient", "createdAt", "updatedAt"]
+    },
+    "BlessingReaction": {
+      "title": "BlessingReaction",
+      "description": "Tracks a user's reaction on a public blessing.",
+      "type": "object",
+      "properties": {
+        "reactionId": { "type": "string", "minLength": 1, "maxLength": 256 },
+        "blessingId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "emoji": { "type": "string", "enum": ["heart", "pray", "sparkle", "smile"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reactionId", "blessingId", "userId", "emoji", "createdAt"]
+    },
+    "BlessingRequest": {
+      "title": "BlessingRequest",
+      "description": "A private or public request for a blessing.",
+      "type": "object",
+      "properties": {
+        "requestId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "senderName": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "senderUsername": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "recipientId": { "type": "string", "maxLength": 128 },
+        "recipientName": { "type": "string", "maxLength": 50 },
+        "recipientUsername": { "type": "string", "maxLength": 24 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 400 },
+        "category": { "type": "string", "minLength": 1, "maxLength": 40 },
+        "visibility": { "type": "string", "enum": ["private", "public"] },
+        "status": { "type": "string", "enum": ["open", "fulfilled", "closed"] },
+        "responseCount": { "type": "number" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["requestId", "senderId", "senderName", "senderUsername", "recipientId", "recipientName", "recipientUsername", "message", "category", "visibility", "status", "responseCount", "createdAt", "updatedAt"]
+    },
+    "Connection": {
+      "title": "Connection",
+      "description": "Bidirectional friend connection between two users.",
+      "type": "object",
+      "properties": {
+        "connectionId": { "type": "string", "minLength": 1, "maxLength": 260, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "requesterId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "recipientId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "participants": { "type": "array" },
+        "requesterName": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "requesterUsername": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "recipientName": { "type": "string", "minLength": 1, "maxLength": 50 },
+        "recipientUsername": { "type": "string", "minLength": 3, "maxLength": 24, "pattern": "^[a-z0-9_]+$" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["connectionId", "requesterId", "recipientId", "participants", "requesterName", "requesterUsername", "recipientName", "recipientUsername", "status", "createdAt", "updatedAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "In-app notification for a user.",
+      "type": "object",
+      "properties": {
+        "notificationId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "actorId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "type": { "type": "string", "enum": ["blessing_received", "blessing_acknowledged", "request_received", "request_fulfilled", "connection_request", "connection_accepted", "public_reaction", "achievement_unlocked", "level_up"] },
+        "title": { "type": "string", "minLength": 1, "maxLength": 100 },
+        "message": { "type": "string", "minLength": 1, "maxLength": 300 },
+        "relatedEntityId": { "type": "string", "maxLength": 128 },
+        "linkPath": { "type": "string", "maxLength": 128 },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["notificationId", "userId", "actorId", "type", "title", "message", "relatedEntityId", "linkPath", "read", "createdAt"]
+    },
+    "SavedBlessing": {
+      "title": "SavedBlessing",
+      "description": "A blessing or daily blessing saved to a user's collection.",
+      "type": "object",
+      "properties": {
+        "saveId": { "type": "string", "minLength": 1, "maxLength": 260, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "blessingId": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "sourceType": { "type": "string", "enum": ["blessing", "daily"] },
+        "blessingSnapshot": { "type": "object" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["saveId", "userId", "blessingId", "sourceType", "blessingSnapshot", "savedAt"]
+    },
+    "UserAchievement": {
+      "title": "UserAchievement",
+      "description": "Record of an achievement unlocked by a user.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "minLength": 1, "maxLength": 260, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "userId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "achievementId": { "type": "string", "minLength": 1, "maxLength": 64, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 80 },
+        "description": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "icon": { "type": "string", "minLength": 1, "maxLength": 32 },
+        "unlockedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "userId", "achievementId", "name", "description", "icon", "unlockedAt"]
+    },
+    "Block": {
+      "title": "Block",
+      "description": "User block record preventing unwanted blessings or requests.",
+      "type": "object",
+      "properties": {
+        "blockId": { "type": "string", "minLength": 1, "maxLength": 260, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "blockerId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "blockedId": { "type": "string", "minLength": 1, "maxLength": 128, "pattern": "^[a-zA-Z0-9_\\-]+$" },
+        "blockedUsername": { "type": "string", "minLength": 3, "maxLength": 24 },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["blockId", "blockerId", "blockedId", "blockedUsername", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublic" },
+      "description": "Publicly discoverable user profiles (no PII)."
+    },
+    "/userPrivate/{userId}": {
+      "schema": { "$ref": "#/entities/UserPrivate" },
+      "description": "Owner-only PII document storing email."
+    },
+    "/usernames/{username}": {
+      "schema": { "$ref": "#/entities/UsernameRegistry" },
+      "description": "Uniqueness registry for usernames."
+    },
+    "/blessings/{blessingId}": {
+      "schema": { "$ref": "#/entities/Blessing" },
+      "description": "Private and public blessings exchanged between users."
+    },
+    "/blessingReactions/{reactionId}": {
+      "schema": { "$ref": "#/entities/BlessingReaction" },
+      "description": "Per-user reactions on public blessings."
+    },
+    "/blessingRequests/{requestId}": {
+      "schema": { "$ref": "#/entities/BlessingRequest" },
+      "description": "Private and public blessing requests."
+    },
+    "/connections/{connectionId}": {
+      "schema": { "$ref": "#/entities/Connection" },
+      "description": "Friend connections and pending requests."
+    },
+    "/notifications/{notificationId}": {
+      "schema": { "$ref": "#/entities/Notification" },
+      "description": "Private user notifications."
+    },
+    "/savedBlessings/{saveId}": {
+      "schema": { "$ref": "#/entities/SavedBlessing" },
+      "description": "User's personal saved blessing collection."
+    },
+    "/userAchievements/{userAchievementId}": {
+      "schema": { "$ref": "#/entities/UserAchievement" },
+      "description": "Unlocked achievements per user."
+    },
+    "/blocks/{blockId}": {
+      "schema": { "$ref": "#/entities/Block" },
+      "description": "Block records enforced on blessing and request creation."
+    }
+  }
+}
